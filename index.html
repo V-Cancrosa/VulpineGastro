@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#17251e">
+    <title>Vulpine Pizza — Karta Dnia</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/style.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">SYSTEM WEWNĘTRZNY</p>
+        <h1>Vulpine <span>Pizza</span></h1>
+      </div>
+      <div class="connection">
+        <span id="connectionDot" class="dot"></span>
+        <span id="connectionText">Sprawdzanie połączenia…</span>
+        <span class="divider">|</span>
+        <span id="syncText">Lokalny zapis</span>
+      </div>
+    </header>
+
+    <nav class="tabs" aria-label="Widoki systemu">
+      <button class="tab active" type="button" data-tab="point">Karta punktu</button>
+      <button class="tab" type="button" data-tab="manager">Biuro / menadżer</button>
+    </nav>
+
+    <main>
+      <section id="syncAlert" class="alert hidden" role="status" aria-live="polite">
+        <div>
+          <strong id="syncAlertTitle"></strong>
+          <p id="syncAlertMessage"></p>
+        </div>
+        <div id="conflictActions" class="actions hidden">
+          <button id="useServerButton" class="button secondary" type="button">Pobierz wersję serwera</button>
+          <button id="keepLocalButton" class="button danger" type="button">Zachowaj lokalną i nadpisz po sprawdzeniu</button>
+        </div>
+      </section>
+
+      <section id="pointView" data-view="point">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">PRACA PUNKTU</p>
+            <h2>Karta Dnia</h2>
+          </div>
+          <div class="selectors">
+            <label>Punkt
+              <select id="locationSelect"></select>
+            </label>
+            <label>Dzień pracy
+              <input id="workDateInput" type="date">
+            </label>
+          </div>
+        </div>
+
+        <div id="cardStatus" class="card-status"></div>
+        <div class="form-grid">
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">01</span>
+              <div><h3>Kasetka z poprzedniego dnia</h3><p>Kucharz wpisuje i potwierdza stan gotówki.</p></div>
+            </div>
+            <form id="cashForm" class="form">
+              <label>Oczekiwany stan poprzedniego dnia (zł)
+                <input name="previousCash" type="number" min="0" step="0.01" inputmode="decimal">
+              </label>
+              <label>Przeliczono w kasetce (zł)
+                <input name="countedCash" type="number" min="0" step="0.01" inputmode="decimal">
+              </label>
+              <label>Weryfikujący kucharz
+                <input name="cashVerifiedBy" maxlength="120" autocomplete="name" required>
+              </label>
+              <button class="button primary" type="submit">Zapisz weryfikację</button>
+            </form>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">02</span>
+              <div><h3>Zespół i zmiana</h3><p>Godziny służą do obliczenia czasu i dniówki.</p></div>
+            </div>
+            <form id="workerForm" class="form">
+              <div class="two-col">
+                <label>Imię i nazwisko
+                  <input name="name" maxlength="120" autocomplete="name" required>
+                </label>
+                <label>Identyfikator (opcjonalnie)
+                  <input name="employeeId" maxlength="40">
+                </label>
+              </div>
+              <div class="two-col">
+                <label>Rola
+                  <select name="role" required>
+                    <option value="kucharz">Kucharz</option>
+                    <option value="pomoc">Pomoc kuchenna</option>
+                    <option value="kierowca">Kierowca</option>
+                  </select>
+                </label>
+                <label>Wejście
+                  <input name="checkIn" type="datetime-local" required>
+                </label>
+              </div>
+              <div class="two-col">
+                <label>Samochód
+                  <select name="vehicleId">
+                    <option value="">Nie dotyczy</option>
+                    <option value="auto-1">Auto 1</option>
+                    <option value="auto-2">Auto 2</option>
+                    <option value="auto-3">Auto 3</option>
+                    <option value="auto-4">Auto 4</option>
+                    <option value="auto-5">Auto 5</option>
+                    <option value="auto-6">Auto 6</option>
+                    <option value="auto-7">Auto 7</option>
+                    <option value="auto-8">Auto 8</option>
+                  </select>
+                </label>
+                <label>Kursy (dla kierowcy)
+                  <input name="trips" type="number" min="0" step="1" value="0">
+                </label>
+              </div>
+              <fieldset class="checklist">
+                <legend>Kontrola auta przed jazdą</legend>
+                <label><input name="checkTires" type="checkbox"> Opony</label>
+                <label><input name="checkLights" type="checkbox"> Światła</label>
+                <label><input name="checkBrakes" type="checkbox"> Hamulce</label>
+                <label><input name="checkFluids" type="checkbox"> Płyny</label>
+                <label><input name="checkDamage" type="checkbox"> Uszkodzenia</label>
+              </fieldset>
+              <button class="button primary" type="submit">Dodaj do zmiany</button>
+            </form>
+            <div id="workersList" class="record-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">03</span>
+              <div><h3>Tankowanie</h3><p>Wpisz kwotę i dane faktury paliwowej.</p></div>
+            </div>
+            <form id="fuelForm" class="form">
+              <label>Kierowca
+                <select name="workerId" required></select>
+              </label>
+              <div class="two-col">
+                <label>Kwota faktury (zł)
+                  <input name="amount" type="number" min="0" step="0.01" required>
+                </label>
+                <label>Litry (opcjonalnie)
+                  <input name="liters" type="number" min="0" step="0.01">
+                </label>
+              </div>
+              <label>Numer faktury / paragonu
+                <input name="invoiceNumber" maxlength="80">
+              </label>
+              <button class="button primary" type="submit">Dodaj tankowanie</button>
+            </form>
+            <div id="fuelList" class="record-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">04</span>
+              <div><h3>Zakupy</h3><p>Uwzględnij źródło środków kierowcy i dokument zakupu.</p></div>
+            </div>
+            <form id="purchaseForm" class="form">
+              <div class="two-col">
+                <label>Sklep / dostawca
+                  <select name="vendor" required>
+                    <option>Makro</option><option>Kurczaki</option><option>Biedronka</option>
+                    <option>Kartony</option><option>Gastromax</option><option>Ali-Baba</option>
+                  </select>
+                </label>
+                <label>Kwota (zł)
+                  <input name="amount" type="number" min="0" step="0.01" required>
+                </label>
+              </div>
+              <div class="two-col">
+                <label>Zapłacono z
+                  <select name="paidFrom">
+                    <option value="customer_cash">Gotówka od klientów</option>
+                    <option value="personal">Prywatne środki kierowcy</option>
+                    <option value="point_cash">Kasa punktu</option>
+                    <option value="company_card">Karta firmowa</option>
+                  </select>
+                </label>
+                <label>Kupujący
+                  <input name="buyer" maxlength="120">
+                </label>
+              </div>
+              <label>Numer dokumentu (opcjonalnie)
+                <input name="receiptNumber" maxlength="80">
+              </label>
+              <button class="button primary" type="submit">Dodaj zakup</button>
+            </form>
+            <div id="purchasesList" class="record-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">05</span>
+              <div><h3>Wyrabianie ciasta</h3><p>Zapisz każdą partię osobno.</p></div>
+            </div>
+            <form id="doughForm" class="form">
+              <label>Godzina / opis partii
+                <input name="label" maxlength="80" placeholder="np. 16:30">
+              </label>
+              <div class="three-col">
+                <label>Małe
+                  <input name="small" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Średnie
+                  <input name="medium" type="number" min="0" step="1" value="0" required>
+                </label>
+                <label>Duże
+                  <input name="large" type="number" min="0" step="1" value="0" required>
+                </label>
+              </div>
+              <button class="button primary" type="submit">Dodaj partię</button>
+            </form>
+            <div id="doughList" class="record-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">06</span>
+              <div><h3>Podsumowanie sprzedaży</h3><p>Każdy wpis określa kanał i formę płatności.</p></div>
+            </div>
+            <form id="salesForm" class="form">
+              <div class="two-col">
+                <label>Kanał
+                  <select name="channel">
+                    <option>Na miejscu / wynos</option><option>Uber</option><option>Bolt</option>
+                    <option>Wolt</option><option>Strona WWW</option>
+                  </select>
+                </label>
+                <label>Płatność
+                  <select name="payment"><option>Gotówka</option><option>Karta</option></select>
+                </label>
+              </div>
+              <label>Kwota (zł)
+                <input name="amount" type="number" min="0" step="0.01" required>
+              </label>
+              <button class="button primary" type="submit">Dodaj pozycję sprzedaży</button>
+            </form>
+            <div id="salesSummary" class="record-list"></div>
+          </article>
+
+          <article class="panel">
+            <div class="section-title">
+              <span class="step">07</span>
+              <div><h3>Gotówka dołożona przez szefów</h3><p>Zapisz każdą wpłatę do punktu.</p></div>
+            </div>
+            <form id="ownerCashForm" class="form">
+              <label>Kwota (zł)
+                <input name="amount" type="number" min="0" step="0.01" required>
+              </label>
+              <label>Opis / osoba przekazująca
+                <input name="note" maxlength="160">
+              </label>
+              <button class="button primary" type="submit">Zapisz wpłatę</button>
+            </form>
+            <div id="ownerCashList" class="record-list"></div>
+          </article>
+        </div>
+
+        <div class="close-bar">
+          <div><strong>Zamknięcie dnia</strong><p>Po zamknięciu karta zostanie wysłana do biura, gdy będzie dostępna sieć.</p></div>
+          <button id="closeDayButton" class="button danger" type="button">Zamknij Kartę Dnia</button>
+        </div>
+      </section>
+
+      <section id="managerView" data-view="manager" class="hidden">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">WIDOK CENTRALNY</p>
+            <h2>Biuro / menadżer</h2>
+          </div>
+          <div class="selectors">
+            <label>Początek tygodnia (poniedziałek)
+              <input id="weekStartInput" type="date">
+            </label>
+            <button id="refreshManagerButton" class="button secondary" type="button">Odśwież</button>
+          </div>
+        </div>
+        <div class="manager-actions">
+          <button id="printButton" class="button primary" type="button">Drukuj raport A4</button>
+          <button id="exportButton" class="button secondary" type="button">Eksport do Excela (CSV)</button>
+          <label class="manager-name">Zatwierdza
+            <input id="managerNameInput" maxlength="120" autocomplete="name" placeholder="Imię i nazwisko">
+          </label>
+          <label>Wypłata
+            <select id="payoutMethodSelect"><option value="gotowka">Gotówka</option><option value="przelew">Przelew (poza systemem)</option></select>
+          </label>
+          <button id="approvePayrollButton" class="button secondary" type="button">Zatwierdź tygodniówkę</button>
+        </div>
+        <article class="panel">
+          <div class="section-title">
+            <span class="step">A</span>
+            <div><h3>Karty Dnia z punktów</h3><p>Aktualizowane na bieżąco po synchronizacji.</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Dzień pracy</th><th>Punkt</th><th>Status</th><th>Sprzedaż</th><th>Pracownicy</th><th>Zmiana</th><th>Podgląd</th></tr></thead>
+              <tbody id="managerCardsBody"></tbody>
+            </table>
+          </div>
+          <p id="managerEmpty" class="empty-state">Brak zsynchronizowanych kart w wybranym tygodniu.</p>
+          <div id="managerCardDetail" class="manager-detail hidden">
+            <div class="section-title">
+              <span class="step">i</span>
+              <div><h3 id="managerCardDetailTitle">Szczegóły Karty Dnia</h3><p>Pełny podgląd zsynchronizowanego wpisu.</p></div>
+              <button id="closeManagerDetail" class="small-button" type="button">Zamknij</button>
+            </div>
+            <div id="managerCardDetailBody" class="detail-grid"></div>
+          </div>
+        </article>
+        <article class="panel weekly-panel">
+          <div class="section-title">
+            <span class="step">B</span>
+            <div><h3>Rozliczenie tygodniowe</h3><p>Wypłaty wymagają zatwierdzenia przez menadżera.</p></div>
+          </div>
+          <div class="table-wrap">
+            <table id="weeklyTable">
+              <thead id="weeklyHead"></thead>
+              <tbody id="weeklyBody"></tbody>
+              <tfoot id="weeklyFoot"></tfoot>
+            </table>
+          </div>
+          <p id="weeklyEmpty" class="empty-state">Brak wpisów czasu pracy w tym tygodniu.</p>
+          <p id="payrollApproval" class="notice" role="status"></p>
+        </article>
+        <p id="managerNotice" class="notice"></p>
+      </section>
+    </main>
+    <footer>Wewnętrzny system · dzień pracy 14:00–02:00 · tydzień poniedziałek–niedziela</footer>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
